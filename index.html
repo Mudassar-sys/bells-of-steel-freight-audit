@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bells of Steel - Freight Invoice Audit Copilot (Live Demo)</title>
+<style>
+  :root{
+    --bg:#0a0c10; --bg2:#12161e; --panel:rgba(24,29,38,.82); --panel2:rgba(32,39,51,.7);
+    --line:rgba(150,165,190,.16); --txt:#eef2f8; --muted:#93a1b8;
+    --steel:#7d93b2; --amber:#f5a623; --red:#f2555a; --green:#2fbf71; --blue:#4a9eff;
+    --shadow:0 20px 60px rgba(0,0,0,.5);
+    --mono:'SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-serif;color:var(--txt);
+    background:
+      radial-gradient(1000px 560px at 8% -10%, rgba(245,166,35,.08), transparent 60%),
+      radial-gradient(1000px 600px at 95% 0%, rgba(74,158,255,.08), transparent 60%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+    min-height:100vh;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1260px;margin:0 auto;padding:24px 20px 70px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:13px}
+  .logo{width:46px;height:46px;border-radius:11px;background:linear-gradient(135deg,#41506b,#7d93b2);display:grid;place-items:center;box-shadow:0 8px 22px rgba(125,147,178,.3)}
+  .logo svg{width:26px;height:26px}
+  .brand h1{font-size:18px;margin:0;letter-spacing:.2px;line-height:1.1}
+  .brand .sub{font-size:11.5px;color:var(--muted);letter-spacing:1.3px;text-transform:uppercase}
+  .live{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:999px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,191,113,.5)}70%{box-shadow:0 0 0 9px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+  .hero{margin:18px 0 20px}
+  .hero h2{font-size:28px;margin:0 0 8px;font-weight:800;letter-spacing:-.4px}
+  .hero h2 .g{background:linear-gradient(90deg,var(--amber),var(--red));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{margin:0;color:var(--muted);font-size:14.5px;max-width:840px;line-height:1.55}
+  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin:20px 0 22px}
+  .metric{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 13px;position:relative;overflow:hidden}
+  .metric .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .metric .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+  .metric.money .v{color:var(--green)} .metric.flag .v{color:var(--amber)}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .btn{padding:10px 15px;border-radius:11px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);cursor:pointer;font-size:13px;font-weight:600;transition:.15s;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{border-color:var(--muted);transform:translateY(-1px)}
+  .btn.primary{border:none;background:linear-gradient(135deg,var(--amber),#e8890f);color:#1a1200;box-shadow:0 8px 24px rgba(245,166,35,.28)}
+  .btn.primary:hover{filter:brightness(1.05)}
+  .btn.ghost{background:transparent}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:var(--shadow);backdrop-filter:blur(9px)}
+  .card h3{margin:0 0 3px;font-size:14px;display:flex;align-items:center;gap:8px}
+  .card .hint{color:var(--muted);font-size:12px;margin:0 0 13px}
+  .tag{font-size:10px;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .inv{border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:9px;cursor:pointer;transition:.15s;background:#0e1220}
+  .inv:hover{border-color:var(--steel);transform:translateX(2px)}
+  .inv.sel{border-color:var(--amber);background:rgba(245,166,35,.07)}
+  .inv .r1{display:flex;justify-content:space-between;align-items:center}
+  .inv .car{font-weight:700;font-size:13px}
+  .inv .amt{font-family:var(--mono);font-size:12.5px}
+  .inv .r2{display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:11px;color:var(--muted)}
+  .st{font-size:10px;padding:2px 7px;border-radius:6px;font-weight:700}
+  .st.pend{background:rgba(147,161,184,.14);color:var(--muted)}
+  .st.flag{background:rgba(245,166,35,.16);color:var(--amber)}
+  .st.clean{background:rgba(47,191,113,.16);color:var(--green)}
+  .tabs{display:flex;gap:6px;margin-bottom:13px}
+  .tab{padding:7px 13px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600}
+  .tab.on{background:var(--panel2);color:var(--txt);border-color:var(--steel)}
+  .empty{color:var(--muted);font-size:13px;padding:34px 10px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:8px 9px;border-bottom:1px solid var(--line)}
+  td{padding:9px;border-bottom:1px solid rgba(150,165,190,.09);font-variant-numeric:tabular-nums}
+  tr.over td{background:rgba(242,85,90,.07)}
+  .num{font-family:var(--mono);text-align:right}
+  .delta.bad{color:var(--red);font-weight:700}
+  .delta.ok{color:var(--green)}
+  .flagpill{font-size:9.5px;padding:2px 6px;border-radius:5px;background:rgba(242,85,90,.16);color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+  .flagpill.ok{background:rgba(47,191,113,.16);color:var(--green)}
+  .verdict{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;border-radius:12px;margin:14px 0;border:1px solid var(--line)}
+  .verdict.rec{background:rgba(47,191,113,.08);border-color:rgba(47,191,113,.3)}
+  .verdict .big{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+  .verdict .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .draft{background:#0b0f1a;border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:6px;font-size:12.5px;line-height:1.6;white-space:pre-wrap;font-family:var(--mono);color:#c7d3e8;max-height:280px;overflow:auto}
+  .draft .hl{color:var(--amber)}
+  .arch{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:13px 14px;background:linear-gradient(180deg,#0d111a,#0b0f17)}
+  .flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;font-size:11px}
+  .fn{border:1px solid var(--line);border-radius:8px;padding:7px 9px;text-align:center;background:#0e1220;min-width:78px}
+  .fn .t{font-weight:800;font-size:10.5px}
+  .fn .s{color:var(--muted);font-size:9px;margin-top:1px}
+  .fa{color:var(--muted);padding:0 6px;font-weight:800}
+  .fn.ai{border-color:var(--amber);background:rgba(245,166,35,.08)}
+  .log{font-family:var(--mono);font-size:11px;line-height:1.6;background:#080b12;border:1px solid var(--line);border-radius:10px;padding:11px 13px;max-height:130px;overflow:auto;color:#9fb0cc;margin-top:13px}
+  .log .ok{color:var(--green)}.log .warn{color:var(--amber)}.log .info{color:var(--blue)}.log .t{color:#4a5568}
+  .foot{margin-top:24px;color:var(--muted);font-size:11.5px;text-align:center;line-height:1.6}
+  .foot b{color:var(--txt)}
+  .stack{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;justify-content:center}
+  .stack span{font-size:10px;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-family:var(--mono)}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,1fr)}.hero h2{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="10" width="18" height="4" rx="1" fill="#0d1526"/><rect x="1" y="7" width="3" height="10" rx="1" fill="#0d1526"/><rect x="20" y="7" width="3" height="10" rx="1" fill="#0d1526"/><rect x="5" y="8" width="2.4" height="8" rx="1" fill="#0d1526"/><rect x="16.6" y="8" width="2.4" height="8" rx="1" fill="#0d1526"/></svg></div>
+      <div>
+        <h1>Bells of Steel &nbsp; Freight Invoice Audit Copilot</h1>
+        <div class="sub">Margin recovery on heavy LTL freight &nbsp; built by CrewNexa</div>
+      </div>
+    </div>
+    <div class="live"><span class="dot"></span> Live demo &nbsp; Claude-powered audit</div>
+  </div>
+
+  <div class="hero">
+    <h2>Carriers overbill heavy freight. <span class="g">This copilot catches it and drafts the dispute.</span></h2>
+    <p>Oversized gym equipment ships LTL, where reweighs, surprise accessorials and detention quietly inflate carrier invoices, and 2 to 5 percent of shipments arrive damaged. This copilot matches every carrier invoice line against the quoted rate and BOL, flags the overcharges, and writes the dispute for you. Click Audit all and watch the recovered dollars add up. The same logic runs as real Python and Claude function-calling in the repo.</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="v" id="m-aud">0</div><div class="l">Invoices audited</div></div>
+    <div class="metric flag"><div class="v" id="m-over">0</div><div class="l">Overcharges found</div></div>
+    <div class="metric money"><div class="v" id="m-rec">$0</div><div class="l">Recovered</div></div>
+    <div class="metric"><div class="v" id="m-pct">0%</div><div class="l">Avg overcharge</div></div>
+    <div class="metric"><div class="v" id="m-disp">0</div><div class="l">Disputes drafted</div></div>
+    <div class="metric"><div class="v" id="m-clean">0</div><div class="l">Clean, passed</div></div>
+  </div>
+
+  <div class="bar">
+    <button class="btn primary" id="btn-all">Audit all invoices</button>
+    <button class="btn" id="btn-reset">Reset</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Incoming carrier invoices <span class="tag" id="q-count">0</span></h3>
+      <p class="hint">Synced from EasyPost and Brightpearl. Click one to audit it.</p>
+      <div id="queue"></div>
+    </div>
+
+    <div class="card">
+      <div class="tabs">
+        <button class="tab on" id="tab-audit">Invoice audit</button>
+        <button class="tab" id="tab-claim">Damage claim</button>
+      </div>
+      <div id="pane-audit">
+        <div id="audit-empty" class="empty">Select an invoice, or hit "Audit all," to see the line-by-line audit and the drafted dispute.</div>
+        <div id="audit-body" style="display:none">
+          <div id="audit-head" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"></div>
+          <div style="overflow:auto">
+            <table><thead><tr><th>Line item</th><th class="num">Quoted / BOL</th><th class="num">Carrier billed</th><th class="num">Delta</th><th>Verdict</th></tr></thead><tbody id="audit-rows"></tbody></table>
+          </div>
+          <div class="verdict" id="verdict"></div>
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:6px 0 4px">Auto-drafted dispute to carrier</div>
+          <div class="draft" id="draft"></div>
+          <div class="bar" style="margin-top:10px"><button class="btn ghost" id="btn-copy">Copy dispute</button></div>
+        </div>
+      </div>
+      <div id="pane-claim" style="display:none">
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Gorgias ticket BOS-48213 - customer reports bent upright on a Hydra rack delivery. Copilot reads the ticket and photos, matches the PO and BOL, and drafts the LTL damage claim.</div>
+        <div class="draft" id="claim-draft"></div>
+        <div class="bar" style="margin-top:10px"><button class="btn ghost" id="btn-copy2">Copy claim</button></div>
+      </div>
+
+      <div class="arch">
+        <div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">How it plugs into your stack</div>
+        <div class="flow">
+          <div class="fn"><div class="t">EasyPost</div><div class="s">quote + BOL</div></div><span class="fa">+</span>
+          <div class="fn"><div class="t">Carrier PDF</div><div class="s">Day &amp; Ross, LTL</div></div><span class="fa">&#8594;</span>
+          <div class="fn ai"><div class="t">Claude</div><div class="s">match + reason</div></div><span class="fa">&#8594;</span>
+          <div class="fn"><div class="t">Auditor.py</div><div class="s">flag overcharge</div></div><span class="fa">&#8594;</span>
+          <div class="fn"><div class="t">Dispute</div><div class="s">drafted email</div></div><span class="fa">&#8594;</span>
+          <div class="fn"><div class="t">Brightpearl</div><div class="s">log recovery</div></div>
+        </div>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>CrewNexa</b> &nbsp; built for Bells of Steel on your stack. Browser demo mirrors the production logic; the audit engine and Claude function-calling run as real Python in the repo.
+    <div class="stack"><span>Python</span><span>FastAPI</span><span>Claude function-calling</span><span>Brightpearl</span><span>EasyPost</span><span>Gorgias</span><span>Shopify + Amazon SP-API</span></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var money=function(n){return '$'+(Math.round(n)).toLocaleString('en-US')};
+  var S={aud:0,over:0,rec:0,disp:0,clean:0,billedFlagged:0};
+  var sel=null;
+
+  var INV=[
+    {id:'DR-88142', carrier:'Day & Ross', bol:'BOL-77213', dest:'Indianapolis, IN', lines:[
+      {n:'Linehaul (quoted class 70)', q:412.00, b:412.00, k:'line'},
+      {n:'Weight (reweigh)', q:640, b:815, k:'weight', rate:0.42, unit:'lb'},
+      {n:'Fuel surcharge', q:0.31, b:0.31, k:'fsc', base:412.00},
+      {n:'Residential delivery', q:0, b:0, k:'acc'},
+      {n:'Liftgate', q:0, b:0, k:'acc'}
+    ]},
+    {id:'ODF-44019', carrier:'Old Dominion', bol:'BOL-77340', dest:'Denver, CO', lines:[
+      {n:'Linehaul (quoted class 85)', q:288.00, b:288.00, k:'line'},
+      {n:'Weight (reweigh)', q:520, b:520, k:'weight', rate:0.39, unit:'lb'},
+      {n:'Fuel surcharge', q:0.29, b:0.34, k:'fsc', base:288.00},
+      {n:'Detention', q:0, b:75.00, k:'acc'},
+      {n:'Liftgate', q:45.00, b:45.00, k:'acc'}
+    ]},
+    {id:'DR-88210', carrier:'Day & Ross', bol:'BOL-77401', dest:'Toronto, ON', lines:[
+      {n:'Linehaul (quoted class 70)', q:196.00, b:196.00, k:'line'},
+      {n:'Weight (reweigh)', q:410, b:410, k:'weight', rate:0.34, unit:'lb'},
+      {n:'Fuel surcharge', q:0.28, b:0.28, k:'fsc', base:196.00}
+    ]},
+    {id:'XPO-30877', carrier:'XPO', bol:'BOL-77455', dest:'Seattle, WA', lines:[
+      {n:'Linehaul (quoted class 70)', q:531.00, b:589.00, k:'line'},
+      {n:'Weight (reweigh)', q:880, b:905, k:'weight', rate:0.41, unit:'lb'},
+      {n:'Fuel surcharge', q:0.32, b:0.32, k:'fsc', base:531.00},
+      {n:'Reclassification (class 85)', q:0, b:64.00, k:'acc'}
+    ]},
+    {id:'ODF-44120', carrier:'Old Dominion', bol:'BOL-77502', dest:'Calgary, AB', lines:[
+      {n:'Linehaul (quoted class 85)', q:344.00, b:344.00, k:'line'},
+      {n:'Weight (reweigh)', q:600, b:600, k:'weight', rate:0.37, unit:'lb'},
+      {n:'Fuel surcharge', q:0.30, b:0.30, k:'fsc', base:344.00},
+      {n:'Liftgate', q:45.00, b:45.00, k:'acc'}
+    ]},
+    {id:'DR-88301', carrier:'Day & Ross', bol:'BOL-77560', dest:'Chicago, IL', lines:[
+      {n:'Linehaul (quoted class 70)', q:377.00, b:377.00, k:'line'},
+      {n:'Weight (reweigh)', q:720, b:864, k:'weight', rate:0.40, unit:'lb'},
+      {n:'Fuel surcharge', q:0.31, b:0.31, k:'fsc', base:377.00},
+      {n:'Residential delivery', q:0, b:38.00, k:'acc'}
+    ]}
+  ];
+
+  var $=function(id){return document.getElementById(id)};
+  function log(msg,cls){var l=$('log');var t=new Date().toLocaleTimeString('en-US',{hour12:false});var d=document.createElement('div');d.innerHTML='<span class="t">'+t+'</span> <span class="'+(cls||'')+'">'+msg+'</span>';l.insertBefore(d,l.firstChild);while(l.children.length>40)l.removeChild(l.lastChild)}
+  function billed(inv){var t=0;inv.lines.forEach(function(L){if(L.k==='weight')t+=L.b*L.rate;else if(L.k==='fsc')t+=L.base*L.b;else t+=L.b});return t}
+
+  function audit(inv){
+    var rows=[], over=0, flags=[];
+    inv.lines.forEach(function(L){
+      var qv,bv,delta,bad=false;
+      if(L.k==='weight'){qv=L.q*L.rate; bv=L.b*L.rate; delta=bv-qv;
+        if(L.b>L.q*1.03){bad=true; over+=delta; flags.push('reweigh +'+(L.b-L.q)+' lb');}
+        rows.push({n:L.n, q:qv, b:bv, delta:delta, bad:bad, tag: bad?'REWEIGH':'ok', sub:L.q+' vs '+L.b+' lb'});
+      } else if(L.k==='fsc'){qv=L.base*L.q; bv=L.base*L.b; delta=bv-qv;
+        if(L.b>L.q+0.001){bad=true; over+=delta; flags.push('fuel surcharge '+Math.round(L.b*100)+'% vs agreed '+Math.round(L.q*100)+'%');}
+        rows.push({n:L.n, q:qv, b:bv, delta:delta, bad:bad, tag: bad?'FSC':'ok', sub:Math.round(L.q*100)+'% vs '+Math.round(L.b*100)+'%'});
+      } else if(L.k==='acc'){qv=L.q; bv=L.b; delta=bv-qv;
+        if(L.b>L.q+0.001){bad=true; over+=delta; flags.push(L.n.toLowerCase()+' not authorized ('+money(L.b)+')');}
+        rows.push({n:L.n, q:qv, b:bv, delta:delta, bad:bad, tag: bad?'UNAUTH':'ok'});
+      } else {qv=L.q; bv=L.b; delta=bv-qv;
+        if(L.b>L.q+0.001){bad=true; over+=delta; flags.push('linehaul billed above quote (+'+money(delta)+')');}
+        rows.push({n:L.n, q:qv, b:bv, delta:delta, bad:bad, tag: bad?'OVER':'ok'});
+      }
+    });
+    return {rows:rows, over:over, flags:flags, total:billed(inv)};
+  }
+
+  var NL=String.fromCharCode(10);
+  function draftDispute(inv, res){
+    var lines = res.flags.map(function(f){return '  - '+f}).join(NL);
+    var dom = inv.carrier.toLowerCase().replace(/[^a-z]/g,'');
+    return ['To: disputes@'+dom+'.com',
+      'Subject: Billing dispute - Invoice '+inv.id+' / '+inv.bol,
+      '', 'Hello,', '',
+      'On invoice '+inv.id+' ('+inv.bol+', '+inv.dest+') we identified '+res.flags.length+' charge(s) that do not match our agreed rate and BOL:',
+      '', lines, '',
+      'Total disputed amount: '+money(res.over)+'. Our BOL and rate confirmation are attached. Please issue a corrected invoice or credit for the amount above.',
+      '', 'Thanks,', 'Accounts Payable, Bells of Steel'].join(NL);
+  }
+
+  function render(){
+    $('m-aud').textContent=S.aud; $('m-over').textContent=S.over; $('m-rec').textContent=money(S.rec);
+    $('m-disp').textContent=S.disp; $('m-clean').textContent=S.clean;
+    $('m-pct').textContent = S.billedFlagged>0 ? Math.round(S.rec/S.billedFlagged*100)+'%' : '0%';
+  }
+
+  function renderQueue(){
+    var q=$('queue'); q.innerHTML=''; $('q-count').textContent=INV.length;
+    INV.forEach(function(inv){
+      var res=inv._res;
+      var st = !res ? '<span class="st pend">unaudited</span>' : res.over>0 ? '<span class="st flag">'+money(res.over)+' flagged</span>' : '<span class="st clean">clean</span>';
+      var d=document.createElement('div'); d.className='inv'+(sel===inv.id?' sel':'');
+      d.innerHTML='<div class="r1"><span class="car">'+inv.carrier+'</span><span class="amt">'+money(billed(inv))+'</span></div>'
+        +'<div class="r2"><span>'+inv.id+' &nbsp; '+inv.dest+'</span>'+st+'</div>';
+      d.addEventListener('click',function(){ doAudit(inv, true); });
+      q.appendChild(d);
+    });
+  }
+
+  function showAudit(inv){
+    var res=inv._res; sel=inv.id;
+    $('audit-empty').style.display='none'; $('audit-body').style.display='block';
+    $('audit-head').innerHTML='<div><b>'+inv.carrier+'</b> &nbsp;<span class="tag">'+inv.id+'</span> &nbsp;<span class="tag">'+inv.bol+'</span></div><div style="font-size:12px;color:var(--muted)">'+inv.dest+'</div>';
+    var tb=$('audit-rows'); tb.innerHTML='';
+    res.rows.forEach(function(r){
+      var tr=document.createElement('tr'); if(r.bad)tr.className='over';
+      var pill = r.bad?'<span class="flagpill">'+r.tag+'</span>':'<span class="flagpill ok">ok</span>';
+      var dcls = r.delta>0.01?'delta bad':(r.delta<-0.01?'delta ok':'');
+      var dtxt = r.delta>0.01?'+'+money(r.delta):(Math.abs(r.delta)<0.01?'-':money(r.delta));
+      tr.innerHTML='<td>'+r.n+(r.sub?' <span style="color:var(--muted);font-size:10px">('+r.sub+')</span>':'')+'</td>'
+        +'<td class="num">'+money(r.q)+'</td><td class="num">'+money(r.b)+'</td>'
+        +'<td class="num '+dcls+'">'+dtxt+'</td><td>'+pill+'</td>';
+      tb.appendChild(tr);
+    });
+    var v=$('verdict');
+    if(res.over>0){ v.className='verdict rec'; v.innerHTML='<div><div class="lbl">Recoverable overcharge</div><div class="big" style="color:var(--green)">'+money(res.over)+'</div></div><div style="text-align:right;font-size:12px;color:var(--muted)">'+res.flags.length+' line(s) flagged<br>dispute drafted below</div>'; $('draft').style.display='block'; $('draft').textContent=draftDispute(inv,res); $('btn-copy').style.display='inline-flex'; }
+    else { v.className='verdict'; v.innerHTML='<div><div class="lbl">Result</div><div class="big" style="color:var(--green)">Clean</div></div><div style="font-size:12px;color:var(--muted)">Invoice matches the quote and BOL. No dispute needed.</div>'; $('draft').style.display='none'; $('btn-copy').style.display='none'; }
+    renderQueue();
+  }
+
+  function doAudit(inv, show){
+    if(!inv._res){
+      var res=audit(inv); inv._res=res; S.aud++;
+      if(res.over>0){ S.over+=res.flags.length; S.rec+=res.over; S.disp++; S.billedFlagged+=res.total; log('Audited '+inv.id+' ('+inv.carrier+') - '+money(res.over)+' recoverable, '+res.flags.length+' line(s) flagged','warn'); }
+      else { S.clean++; log('Audited '+inv.id+' ('+inv.carrier+') - clean, matches BOL','ok'); }
+      render();
+    }
+    if(show) showAudit(inv);
+  }
+
+  $('btn-all').addEventListener('click',function(){
+    var i=0; log('POST /audit - reading '+INV.length+' carrier invoices via Claude function-calling','info');
+    (function next(){ if(i>=INV.length){ log('Batch complete - '+money(S.rec)+' recoverable across '+S.disp+' disputes','ok'); if(sel){var s=INV.find(function(x){return x.id===sel}); if(s)showAudit(s);} else { var first=INV.find(function(x){return x._res&&x._res.over>0}); if(first)showAudit(first);} return; } doAudit(INV[i], false); i++; setTimeout(next, 320); })();
+  });
+  $('btn-reset').addEventListener('click',function(){
+    INV.forEach(function(x){delete x._res}); S={aud:0,over:0,rec:0,disp:0,clean:0,billedFlagged:0}; sel=null;
+    $('audit-empty').style.display='block'; $('audit-body').style.display='none'; $('log').innerHTML='';
+    render(); renderQueue(); log('Reset - '+INV.length+' invoices queued from EasyPost + Brightpearl','info');
+  });
+  $('btn-copy').addEventListener('click',function(){ navigator.clipboard&&navigator.clipboard.writeText($('draft').textContent); this.textContent='Copied'; var b=this; setTimeout(function(){b.textContent='Copy dispute'},1400); });
+  $('btn-copy2').addEventListener('click',function(){ navigator.clipboard&&navigator.clipboard.writeText($('claim-draft').textContent); this.textContent='Copied'; var b=this; setTimeout(function(){b.textContent='Copy claim'},1400); });
+
+  $('tab-audit').addEventListener('click',function(){ this.classList.add('on'); $('tab-claim').classList.remove('on'); $('pane-audit').style.display='block'; $('pane-claim').style.display='none'; });
+  $('tab-claim').addEventListener('click',function(){ this.classList.add('on'); $('tab-audit').classList.remove('on'); $('pane-audit').style.display='none'; $('pane-claim').style.display='block'; });
+
+  $('claim-draft').textContent = [
+    'To: claims@dayandross.com',
+    'Subject: Freight damage claim - PO BOS-19942 / BOL-77213',
+    '', 'Hello,', '',
+    'We are filing a concealed damage claim for PO BOS-19942 (Hydra Rack, class 70), delivered '+new Date().toLocaleDateString('en-US')+' to the customer in Indianapolis, IN.',
+    '', 'Damage: bent upright, documented on delivery. Photos of the packaging, product and delivery receipt are attached (ref Gorgias ticket BOS-48213).',
+    '', 'Claimed amount: $214.00 (replacement upright + return freight), within the carrier liability for class 70 at declared value.',
+    '', 'Please confirm receipt and a claim number.',
+    '', 'Thanks,', 'Accounts Payable, Bells of Steel'].join(NL);
+
+  log('Copilot ready - '+INV.length+' invoices synced from EasyPost + Brightpearl','info');
+  render(); renderQueue();
+})();
+</script>
+</body>
+</html>
